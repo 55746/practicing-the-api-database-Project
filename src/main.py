@@ -30,10 +30,10 @@ setup_admin(app)
 def login():
     email = request.json.get("email", None)
     password = request.json.get("password", None)
-    is_user = User.query.filter_by(email='email')
+    is_user = User.query.filter_by(email=email).first()
 
-    if is_user.email != "email" or is_user.password != "password":
-        return jsonify({"msg": "Bad username or password DumbFuck"}), 401
+    if is_user.email != email or is_user.password != password:
+        return jsonify({"msg": "Bad username or password"}), 401
 
     access_token = create_access_token(identity=email)
     return jsonify(access_token=access_token)
@@ -65,13 +65,27 @@ def handle_hello():
     all_user = list(map(lambda x: x.serialize(), user_query))
     return jsonify(all_user), 200
 
+@app.route('/user', methods=['POST'])
+def create_User():
+    # You have to request a body before anything else
+    body=request.get_json()
+    # the request.get_json is everything in the body your trying to send in postman
+    if 'email' not in body:
+        raise APIException('bad request, email needed', status_code=400)
+    if 'password' not in  body:
+        raise APIException('bad request, password needed', status_code=400)
+    if 'is_active' not in body:
+                raise APIException('bad request, is_active needed', status_code=400)
+    user1 = User(email=body['email'], password=body['password'], is_active=body['is_active'])
+    db.session.add(user1)
+    db.session.commit()
+    return jsonify(user1.serialize())
 
 @app.route('/user/<int:user_id>', methods=['GET'])
 def userID(user_id):
     user = User.query.get(user_id)
     return jsonify(user.email), 200
 # YOU HAVE TO HAVE SERIALIZE BECAUSE OF WHAT ITS RETURNING
-
 
 # this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
